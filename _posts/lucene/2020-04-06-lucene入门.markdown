@@ -1,0 +1,93 @@
+---
+layout: post
+title: lucene入门
+categories: 搜索引擎
+---
+
+## lucene简单例子
+大体流程：
+1，构建索引
+2，根据用户提交的query来进行查询
+
+### 构建索引的步骤
+* 索引的存放目录
+* 分析器，用来构建倒排索引
+* 索引写入器，需要上面两个传入的两个参数，然后不断的加入每一个文档，文档包括很多域，比如文章常见的域，作者、内容、标题、面包屑等
+
+### query的查找
+#### 索引查找器
+* 索引的存放目录
+* 索引读取器，参数为索引的存放目录
+* 索引搜索器，参数为索引读取器，真正处理逻辑的类
+#### query分析
+* 构造QUERY分析器，解析QUERY字符串
+
+## 代码展示
+```
+package hisoka.java.lucene_study;
+
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.*;
+import org.apache.lucene.queryparser.classic.ParseException;
+import org.apache.lucene.queryparser.classic.QueryParser;
+import org.apache.lucene.search.*;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
+
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+public class Test {
+    public static void main(String[] args) throws IOException, ParseException {
+
+
+        Analyzer analyzer = new StandardAnalyzer(); // 分析器
+        IndexWriterConfig iwc = new IndexWriterConfig(analyzer); // 索引配置类
+
+        iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE);// 构建索引分为增量构建和全量，如果数据量大，那么选择增量构建
+
+        Path indexPath = Paths.get("index");
+        Directory dir = FSDirectory.open(indexPath);
+        IndexWriter iw = new IndexWriter(dir, iwc); // 真正处理索引的类
+
+        Document doc = new Document();// 每篇文章，可以自定义很多域
+        Field content = new TextField("content", "hello name hisoka hisoka is sucked", Field.Store.YES);
+        Field title = new TextField("title","hello name hisoka", Field.Store.YES);
+        Field  author = new StringField("author","hisoka", Field.Store.YES);
+        doc.add(content);
+        doc.add(title);
+        doc.add(author);
+
+        System.out.println(doc.toString());
+
+        iw.addDocument(doc);
+        iw.close();// 关闭之后才会真正构建成功索引
+
+
+        IndexReader ir = DirectoryReader.open(FSDirectory.open(Paths.get("index")));
+
+        IndexSearcher is = new IndexSearcher(ir);//对应索引构建，这里只需要索引目录，并不需要分析器
+        QueryParser queryParser = new QueryParser("content",analyzer); // 这里分析器只针对query的
+        Query query = queryParser.parse("hisoka");
+
+        TopDocs topDocs = is.search(query,1);
+        ScoreDoc[] scoreDoc = topDocs.scoreDocs;
+        System.out.println("display");
+
+        for(ScoreDoc sd:scoreDoc) {
+            Document ele = is.doc(sd.doc);
+            System.out.println(ele.get("title"));
+            System.out.println(ele.get("author"));
+            System.out.println(ele.get("content"));
+        }
+    }
+}
+
+```
