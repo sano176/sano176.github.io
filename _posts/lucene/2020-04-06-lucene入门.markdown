@@ -26,7 +26,7 @@ categories: 搜索引擎
 * 构造QUERY分析器，解析QUERY字符串
 
 ## 代码展示
-```java
+{% highlight java %}
 package hisoka.java.lucene_study;
 
 
@@ -92,5 +92,4 @@ public class Test {
         }
     }
 }
-
-```
+{% endhighlight %}
